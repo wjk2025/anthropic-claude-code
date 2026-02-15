@@ -116,10 +116,13 @@ class TestSpaceCalculator:
         assert len(project.support_spaces) > 0
 
         # Check that meeting rooms were allocated
-        meeting_types = [s.space_type for s in project.support_spaces]
-        assert SpaceType.CONFERENCE_LARGE in meeting_types
-        assert SpaceType.CONFERENCE_MEDIUM in meeting_types
-        assert SpaceType.HUDDLE_ROOM in meeting_types
+        space_types = [s.space_type for s in project.support_spaces]
+        assert SpaceType.CONFERENCE_LARGE in space_types
+        assert SpaceType.CONFERENCE_MEDIUM in space_types
+        assert SpaceType.HUDDLE_ROOM in space_types
+
+        # Check that mail room was allocated
+        assert SpaceType.MAIL_ROOM in space_types
 
     def test_sf_per_person(self):
         """Test SF per person calculation."""

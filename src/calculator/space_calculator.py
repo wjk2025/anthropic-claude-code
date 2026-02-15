@@ -212,6 +212,11 @@ class SpaceCalculator:
         storage_sf = max(100, headcount * 7)
         self.project.add_support_space(SpaceType.STORAGE, 1, custom_size=storage_sf)
 
+        # Mail room: 1 per 200 employees (only for larger organizations)
+        if headcount >= 30:
+            mail_rooms = max(1, headcount // 200)
+            self.project.add_support_space(SpaceType.MAIL_ROOM, mail_rooms)
+
         # Server/IT room
         self.project.add_support_space(SpaceType.SERVER_ROOM, 1)
 

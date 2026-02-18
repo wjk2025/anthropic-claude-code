@@ -6,14 +6,7 @@ import os
 class Config:
     """Application configuration loaded from environment variables."""
 
-    # Microsoft Azure AD / Entra ID App Registration
-    CLIENT_ID = os.environ.get("O365_CLIENT_ID", "")
-    CLIENT_SECRET = os.environ.get("O365_CLIENT_SECRET", "")
-    TENANT_ID = os.environ.get("O365_TENANT_ID", "")
-    REDIRECT_URI = os.environ.get("O365_REDIRECT_URI", "http://localhost:5000/auth/callback")
-
-    # Microsoft Graph API
-    AUTHORITY = f"https://login.microsoftonline.com/{TENANT_ID}"
+    # Microsoft Graph API (static)
     SCOPES = ["Mail.Read", "Mail.ReadBasic", "User.Read"]
     GRAPH_API_BASE = "https://graph.microsoft.com/v1.0"
 
@@ -29,3 +22,25 @@ class Config:
 
     # Maximum emails to fetch per poll
     MAX_EMAILS_PER_POLL = int(os.environ.get("MAX_EMAILS_PER_POLL", "50"))
+
+
+def get_azure_credentials() -> dict:
+    """Get Azure AD credentials from the database, falling back to env vars."""
+    from task_tracker.models.database import get_app_settings
+
+    settings = get_app_settings()
+    if settings and settings.get("setup_complete"):
+        return {
+            "client_id": settings["client_id"],
+            "client_secret": settings["client_secret"],
+            "tenant_id": settings["tenant_id"],
+            "redirect_uri": settings["redirect_uri"],
+        }
+
+    # Fallback to environment variables
+    return {
+        "client_id": os.environ.get("O365_CLIENT_ID", ""),
+        "client_secret": os.environ.get("O365_CLIENT_SECRET", ""),
+        "tenant_id": os.environ.get("O365_TENANT_ID", ""),
+        "redirect_uri": os.environ.get("O365_REDIRECT_URI", "http://localhost:5000/auth/callback"),
+    }

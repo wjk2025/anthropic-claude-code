@@ -2,20 +2,22 @@
 
 import urllib.parse
 import requests
-from task_tracker.config import Config
+from task_tracker.config import Config, get_azure_credentials
 
 
 def get_auth_url(state: str = "") -> str:
     """Generate the Microsoft OAuth2 authorization URL."""
+    creds = get_azure_credentials()
+    authority = f"https://login.microsoftonline.com/{creds['tenant_id']}"
     params = {
-        "client_id": Config.CLIENT_ID,
+        "client_id": creds["client_id"],
         "response_type": "code",
-        "redirect_uri": Config.REDIRECT_URI,
+        "redirect_uri": creds["redirect_uri"],
         "response_mode": "query",
         "scope": " ".join(Config.SCOPES),
         "state": state,
     }
-    return f"{Config.AUTHORITY}/oauth2/v2.0/authorize?{urllib.parse.urlencode(params)}"
+    return f"{authority}/oauth2/v2.0/authorize?{urllib.parse.urlencode(params)}"
 
 
 def exchange_code_for_token(auth_code: str) -> dict:
@@ -23,13 +25,15 @@ def exchange_code_for_token(auth_code: str) -> dict:
 
     Returns dict with: access_token, refresh_token, expires_in, token_type
     """
-    token_url = f"{Config.AUTHORITY}/oauth2/v2.0/token"
+    creds = get_azure_credentials()
+    authority = f"https://login.microsoftonline.com/{creds['tenant_id']}"
+    token_url = f"{authority}/oauth2/v2.0/token"
     data = {
-        "client_id": Config.CLIENT_ID,
-        "client_secret": Config.CLIENT_SECRET,
+        "client_id": creds["client_id"],
+        "client_secret": creds["client_secret"],
         "grant_type": "authorization_code",
         "code": auth_code,
-        "redirect_uri": Config.REDIRECT_URI,
+        "redirect_uri": creds["redirect_uri"],
         "scope": " ".join(Config.SCOPES),
     }
     resp = requests.post(token_url, data=data, timeout=30)
@@ -42,10 +46,12 @@ def refresh_access_token(refresh_token: str) -> dict:
 
     Returns dict with: access_token, refresh_token, expires_in, token_type
     """
-    token_url = f"{Config.AUTHORITY}/oauth2/v2.0/token"
+    creds = get_azure_credentials()
+    authority = f"https://login.microsoftonline.com/{creds['tenant_id']}"
+    token_url = f"{authority}/oauth2/v2.0/token"
     data = {
-        "client_id": Config.CLIENT_ID,
-        "client_secret": Config.CLIENT_SECRET,
+        "client_id": creds["client_id"],
+        "client_secret": creds["client_secret"],
         "grant_type": "refresh_token",
         "refresh_token": refresh_token,
         "scope": " ".join(Config.SCOPES),

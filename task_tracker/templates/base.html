@@ -19,9 +19,11 @@
                 <form action="{{ url_for('sync.sync_now') }}" method="post" class="inline-form">
                     <button type="submit" class="btn btn-sm btn-primary">Sync Emails</button>
                 </form>
+                <a href="{{ url_for('setup.index') }}" class="btn btn-sm btn-ghost">Settings</a>
                 <a href="{{ url_for('auth.logout') }}" class="btn btn-sm btn-ghost">Disconnect</a>
             {% else %}
                 <a href="{{ url_for('auth.login') }}" class="btn btn-sm btn-primary">Connect Office 365</a>
+                <a href="{{ url_for('setup.index') }}" class="btn btn-sm btn-ghost">Settings</a>
             {% endif %}
         </div>
     </nav>

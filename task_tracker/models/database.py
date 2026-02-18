@@ -104,6 +104,16 @@ def init_db(db_path: str = "task_tracker.db") -> None:
             last_email_timestamp TEXT
         )
     """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS app_settings (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            client_id TEXT DEFAULT '',
+            client_secret TEXT DEFAULT '',
+            tenant_id TEXT DEFAULT '',
+            redirect_uri TEXT DEFAULT '',
+            setup_complete INTEGER DEFAULT 0
+        )
+    """)
     conn.execute("CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_tasks_priority ON tasks(priority)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_tasks_email_id ON tasks(email_id)")
@@ -326,3 +336,37 @@ def update_sync_state(last_sync_at: str, last_email_timestamp: Optional[str] = N
         conn.commit()
     finally:
         close_db(conn)
+
+
+# --- App settings (Azure AD credentials) ---
+
+def get_app_settings() -> Optional[dict]:
+    """Get stored Azure AD app credentials."""
+    conn = get_db()
+    try:
+        row = conn.execute("SELECT * FROM app_settings WHERE id = 1").fetchone()
+        return dict(row) if row else None
+    finally:
+        close_db(conn)
+
+
+def save_app_settings(client_id: str, client_secret: str, tenant_id: str,
+                      redirect_uri: str) -> None:
+    """Save Azure AD app credentials to the database."""
+    conn = get_db()
+    try:
+        conn.execute(
+            """INSERT OR REPLACE INTO app_settings
+               (id, client_id, client_secret, tenant_id, redirect_uri, setup_complete)
+               VALUES (1, ?, ?, ?, ?, 1)""",
+            (client_id, client_secret, tenant_id, redirect_uri),
+        )
+        conn.commit()
+    finally:
+        close_db(conn)
+
+
+def is_setup_complete() -> bool:
+    """Check if initial Azure AD setup has been done."""
+    settings = get_app_settings()
+    return settings is not None and settings.get("setup_complete") == 1

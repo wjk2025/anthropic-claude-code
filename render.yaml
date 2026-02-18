@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: o365-task-tracker
+    runtime: python
+    plan: free
+    buildCommand: pip install -r task_tracker/requirements.txt
+    startCommand: gunicorn task_tracker.run:app --bind 0.0.0.0:$PORT
+    envVars:
+      - key: O365_CLIENT_ID
+        sync: false
+      - key: O365_CLIENT_SECRET
+        sync: false
+      - key: O365_TENANT_ID
+        sync: false
+      - key: O365_REDIRECT_URI
+        sync: false
+      - key: FLASK_SECRET_KEY
+        generateValue: true
+      - key: TASK_DB_PATH
+        value: /opt/render/project/data/task_tracker.db
+    disk:
+      name: task-data
+      mountPath: /opt/render/project/data
+      sizeGB: 1

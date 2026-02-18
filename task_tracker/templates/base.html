@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Task Tracker{% endblock %} — O365 Task Tracker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <a href="{{ url_for('dashboard.index') }}">
+                <span class="logo">&#9745;</span> O365 Task Tracker
+            </a>
+        </div>
+        <div class="nav-actions">
+            {% if auth %}
+                <span class="user-info">{{ auth.user_name or auth.user_email }}</span>
+                <form action="{{ url_for('sync.sync_now') }}" method="post" class="inline-form">
+                    <button type="submit" class="btn btn-sm btn-primary">Sync Emails</button>
+                </form>
+                <a href="{{ url_for('auth.logout') }}" class="btn btn-sm btn-ghost">Disconnect</a>
+            {% else %}
+                <a href="{{ url_for('auth.login') }}" class="btn btn-sm btn-primary">Connect Office 365</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <main class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="flash flash-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

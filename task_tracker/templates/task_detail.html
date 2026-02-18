@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}{{ task.title }}{% endblock %}
+
+{% block content %}
+<div class="detail-header">
+    <a href="{{ url_for('dashboard.index') }}" class="back-link">&larr; Back to Dashboard</a>
+</div>
+
+<div class="detail-card">
+    <div class="detail-top">
+        <span class="priority-badge priority-{{ task.priority.value }}">{{ task.priority.value|upper }}</span>
+        <span class="category-badge">{{ task.category or 'General' }}</span>
+        <span class="status-badge status-{{ task.status.value }}">{{ task.status.value|replace('_', ' ')|title }}</span>
+    </div>
+
+    <h1 class="detail-title" id="taskTitle" contenteditable="true" data-field="title">{{ task.title }}</h1>
+
+    <div class="detail-meta">
+        {% if task.sender_name %}
+            <div class="meta-item"><strong>From:</strong> {{ task.sender_name }} ({{ task.sender_email }})</div>
+        {% endif %}
+        {% if task.email_subject %}
+            <div class="meta-item"><strong>Email Subject:</strong> {{ task.email_subject }}</div>
+        {% endif %}
+        {% if task.email_received_at %}
+            <div class="meta-item"><strong>Email Received:</strong> {{ task.email_received_at }}</div>
+        {% endif %}
+        {% if task.due_date %}
+            <div class="meta-item"><strong>Due Date:</strong> {{ task.due_date }}</div>
+        {% endif %}
+        <div class="meta-item"><strong>Created:</strong> {{ task.created_at }}</div>
+        <div class="meta-item"><strong>Updated:</strong> {{ task.updated_at }}</div>
+        {% if task.completed_at %}
+            <div class="meta-item"><strong>Completed:</strong> {{ task.completed_at }}</div>
+        {% endif %}
+    </div>
+
+    {% if task.tags %}
+    <div class="detail-tags">
+        {% for tag in task.tags %}
+            <span class="tag">{{ tag }}</span>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="detail-section">
+        <h3>Description</h3>
+        <div class="detail-description" id="taskDescription" contenteditable="true" data-field="description">{{ task.description or 'No description' }}</div>
+    </div>
+
+    <div class="detail-section">
+        <h3>Notes</h3>
+        <textarea id="taskNotes" class="notes-textarea" data-field="notes" placeholder="Add your notes here...">{{ task.notes }}</textarea>
+    </div>
+
+    <div class="detail-controls">
+        <div class="control-group">
+            <label>Status</label>
+            <select id="taskStatus" onchange="updateField({{ task.id }}, 'status', this.value)">
+                {% for s in statuses %}
+                    <option value="{{ s.value }}" {{ 'selected' if task.status == s }}>{{ s.value|replace('_', ' ')|title }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="control-group">
+            <label>Priority</label>
+            <select id="taskPriority" onchange="updateField({{ task.id }}, 'priority', this.value)">
+                {% for p in priorities %}
+                    <option value="{{ p.value }}" {{ 'selected' if task.priority == p }}>{{ p.value|title }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="control-group">
+            <label>Due Date</label>
+            <input type="date" id="taskDueDate" value="{{ task.due_date or '' }}" onchange="updateField({{ task.id }}, 'due_date', this.value)">
+        </div>
+        <button class="btn btn-danger" onclick="deleteTask({{ task.id }})">Delete Task</button>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const TASK_ID = {{ task.id }};
+
+// Save on blur for contenteditable fields
+document.querySelectorAll('[contenteditable]').forEach(el => {
+    el.addEventListener('blur', () => {
+        updateField(TASK_ID, el.dataset.field, el.innerText.trim());
+    });
+});
+
+// Save notes on blur
+document.getElementById('taskNotes').addEventListener('blur', function() {
+    updateField(TASK_ID, 'notes', this.value);
+});
+</script>
+{% endblock %}

@@ -73,3 +73,6 @@ data/projects/*.json
 # OS files
 .DS_Store
 Thumbs.db
+
+# Task tracker database
+task_tracker.db

@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- Stats Bar -->
+<section class="stats-bar">
+    <div class="stat-card">
+        <div class="stat-number">{{ stats.total }}</div>
+        <div class="stat-label">Total Tasks</div>
+    </div>
+    <div class="stat-card stat-new">
+        <div class="stat-number">{{ stats.new }}</div>
+        <div class="stat-label">New</div>
+    </div>
+    <div class="stat-card stat-progress">
+        <div class="stat-number">{{ stats.in_progress }}</div>
+        <div class="stat-label">In Progress</div>
+    </div>
+    <div class="stat-card stat-waiting">
+        <div class="stat-number">{{ stats.waiting }}</div>
+        <div class="stat-label">Waiting</div>
+    </div>
+    <div class="stat-card stat-done">
+        <div class="stat-number">{{ stats.completed }}</div>
+        <div class="stat-label">Completed</div>
+    </div>
+    <div class="stat-card stat-urgent">
+        <div class="stat-number">{{ stats.urgent_active }}</div>
+        <div class="stat-label">Urgent</div>
+    </div>
+    <div class="stat-card stat-overdue">
+        <div class="stat-number">{{ stats.overdue }}</div>
+        <div class="stat-label">Overdue</div>
+    </div>
+</section>
+
+<!-- Filters & Actions -->
+<section class="toolbar">
+    <form method="get" class="filter-form" id="filterForm">
+        <div class="filter-group">
+            <label>Status</label>
+            <select name="status" onchange="this.form.submit()">
+                <option value="all" {{ 'selected' if filters.status == 'all' }}>All</option>
+                {% for s in statuses %}
+                    <option value="{{ s.value }}" {{ 'selected' if filters.status == s.value }}>{{ s.value|replace('_', ' ')|title }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Priority</label>
+            <select name="priority" onchange="this.form.submit()">
+                <option value="all" {{ 'selected' if filters.priority == 'all' }}>All</option>
+                {% for p in priorities %}
+                    <option value="{{ p.value }}" {{ 'selected' if filters.priority == p.value }}>{{ p.value|title }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-group search-group">
+            <label>Search</label>
+            <input type="text" name="search" value="{{ filters.search }}" placeholder="Search tasks...">
+            <button type="submit" class="btn btn-sm btn-ghost">Go</button>
+        </div>
+    </form>
+    <button class="btn btn-primary" onclick="openCreateModal()">+ New Task</button>
+</section>
+
+<!-- Task List -->
+<section class="task-list">
+    {% if tasks %}
+        {% for task in tasks %}
+        <div class="task-card priority-{{ task.priority.value }}" data-task-id="{{ task.id }}">
+            <div class="task-header">
+                <span class="priority-badge priority-{{ task.priority.value }}">{{ task.priority.value|upper }}</span>
+                <span class="category-badge">{{ task.category or 'General' }}</span>
+                {% if task.due_date %}
+                    <span class="due-date {{ 'overdue' if task.due_date < now_iso() }}">Due: {{ task.due_date }}</span>
+                {% endif %}
+                <div class="task-actions">
+                    <select class="status-select" onchange="updateTaskStatus({{ task.id }}, this.value)">
+                        {% for s in statuses %}
+                            <option value="{{ s.value }}" {{ 'selected' if task.status == s }}>{{ s.value|replace('_', ' ')|title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <a href="{{ url_for('dashboard.task_detail', task_id=task.id) }}" class="task-title">{{ task.title }}</a>
+            <div class="task-meta">
+                {% if task.sender_name %}
+                    <span class="sender">From: {{ task.sender_name }}</span>
+                {% endif %}
+                {% if task.email_received_at %}
+                    <span class="received">{{ task.email_received_at[:10] }}</span>
+                {% elif task.created_at %}
+                    <span class="received">{{ task.created_at[:10] }}</span>
+                {% endif %}
+                {% for tag in task.tags %}
+                    <span class="tag">{{ tag }}</span>
+                {% endfor %}
+            </div>
+            {% if task.description %}
+                <div class="task-desc">{{ task.description[:200] }}{% if task.description|length > 200 %}...{% endif %}</div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-state">
+            {% if auth %}
+                <h3>No tasks found</h3>
+                <p>Click "Sync Emails" to check your inbox, or create a task manually.</p>
+            {% else %}
+                <h3>Connect your Office 365 account</h3>
+                <p>Click "Connect Office 365" above to start tracking tasks from your email.</p>
+            {% endif %}
+        </div>
+    {% endif %}
+</section>
+
+<!-- Create Task Modal -->
+<div id="createModal" class="modal" style="display:none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Create Task</h2>
+            <button onclick="closeCreateModal()" class="modal-close">&times;</button>
+        </div>
+        <form action="{{ url_for('dashboard.create_manual_task') }}" method="post">
+            <div class="form-group">
+                <label for="title">Title</label>
+                <input type="text" name="title" id="title" required placeholder="What needs to be done?">
+            </div>
+            <div class="form-group">
+                <label for="description">Description</label>
+                <textarea name="description" id="description" rows="3" placeholder="Details..."></textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="priority">Priority</label>
+                    <select name="priority" id="priority">
+                        <option value="medium" selected>Medium</option>
+                        <option value="urgent">Urgent</option>
+                        <option value="high">High</option>
+                        <option value="low">Low</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="category">Category</label>
+                    <select name="category" id="category">
+                        <option value="General">General</option>
+                        <option value="Review">Review</option>
+                        <option value="Response">Response</option>
+                        <option value="Deliverable">Deliverable</option>
+                        <option value="Meeting">Meeting</option>
+                        <option value="Follow-up">Follow-up</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="due_date">Due Date</label>
+                    <input type="date" name="due_date" id="due_date">
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="button" onclick="closeCreateModal()" class="btn btn-ghost">Cancel</button>
+                <button type="submit" class="btn btn-primary">Create Task</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

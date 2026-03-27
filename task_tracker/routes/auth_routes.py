@@ -35,13 +35,14 @@ def callback():
         token_data = exchange_code_for_token(code)
         expires_at = datetime.utcnow() + timedelta(seconds=token_data["expires_in"])
 
-        # Get user profile
+        # Save token
         save_auth_token(
             access_token=token_data["access_token"],
             refresh_token=token_data.get("refresh_token", ""),
             expires_at=expires_at.isoformat(),
         )
 
+        # Get user profile
         client = GraphClient()
         profile = client.get_user_profile()
         if profile:
@@ -53,7 +54,16 @@ def callback():
                 user_name=profile.get("displayName", ""),
             )
 
-        flash("Successfully connected to Office 365!", "success")
+        flash("Connected to Office 365! Running first email sync...", "success")
+
+        # Auto-sync emails immediately after connecting
+        from task_tracker.routes.sync_routes import sync_emails
+        result = sync_emails()
+        if result.get("error"):
+            flash(f"Sync issue: {result['error']}", "error")
+        else:
+            flash(f"Found {result['new_tasks']} tasks from {result['emails_checked']} emails.", "success")
+
     except Exception as e:
         flash(f"Authentication error: {str(e)}", "error")
 

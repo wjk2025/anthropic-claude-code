@@ -86,6 +86,13 @@ def sync_now():
     return redirect(url_for("dashboard.index"))
 
 
+@sync_bp.route("/api", methods=["POST"])
+def sync_api():
+    """JSON API for background sync (called by auto-sync JS)."""
+    result = sync_emails()
+    return jsonify(result)
+
+
 @sync_bp.route("/status")
 def sync_status():
     """Get sync status as JSON."""

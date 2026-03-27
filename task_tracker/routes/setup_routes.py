@@ -27,5 +27,5 @@ def save():
         return redirect(url_for("setup.index"))
 
     save_app_settings(client_id, client_secret, tenant_id, redirect_uri)
-    flash("Settings saved! Now connect your Microsoft account.", "success")
-    return redirect(url_for("dashboard.index"))
+    flash("Settings saved! Connecting to Microsoft...", "success")
+    return redirect(url_for("auth.login"))

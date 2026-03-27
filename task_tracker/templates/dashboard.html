@@ -2,6 +2,18 @@
 {% block title %}Dashboard{% endblock %}
 
 {% block content %}
+<!-- Sync Status Bar -->
+{% if auth %}
+<div id="syncStatus" class="sync-status-bar">
+    <span class="sync-spinner" style="display:none;"></span>
+    <span class="sync-label">Checking sync...</span>
+    <span class="sync-auto">Auto-sync: every 5 min</span>
+    <form action="{{ url_for('sync.sync_now') }}" method="post" class="inline-form">
+        <button type="submit" class="btn btn-sm btn-ghost">Sync Now</button>
+    </form>
+</div>
+{% endif %}
+
 <!-- Stats Bar -->
 <section class="stats-bar">
     <div class="stat-card">

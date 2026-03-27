@@ -141,3 +141,66 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 5000);
     });
 });
+
+// --- Auto-Sync ---
+(function() {
+    const SYNC_INTERVAL = 5 * 60 * 1000; // 5 minutes
+    let syncTimer = null;
+
+    function updateSyncStatus(text, syncing) {
+        const el = document.getElementById('syncStatus');
+        if (!el) return;
+        const label = el.querySelector('.sync-label');
+        const spinner = el.querySelector('.sync-spinner');
+        if (label) label.textContent = text;
+        if (spinner) spinner.style.display = syncing ? 'inline-block' : 'none';
+    }
+
+    function formatTimeAgo(isoStr) {
+        if (!isoStr) return 'never';
+        const diff = Math.floor((Date.now() - new Date(isoStr + 'Z').getTime()) / 1000);
+        if (diff < 60) return 'just now';
+        if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+        if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+        return Math.floor(diff / 86400) + 'd ago';
+    }
+
+    function runAutoSync() {
+        updateSyncStatus('Syncing...', true);
+        fetch('/sync/api', { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) {
+                updateSyncStatus('Sync failed', false);
+                return;
+            }
+            const timeStr = formatTimeAgo(data.last_sync);
+            updateSyncStatus('Synced ' + timeStr, false);
+            if (data.new_tasks > 0) {
+                showToast(data.new_tasks + ' new task' + (data.new_tasks > 1 ? 's' : '') + ' from email');
+                // Reload to show new tasks
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                refreshStats();
+            }
+        })
+        .catch(() => updateSyncStatus('Sync error', false));
+    }
+
+    function startAutoSync() {
+        // Only auto-sync if authenticated (check for sync status bar)
+        if (!document.getElementById('syncStatus')) return;
+        // Initial sync status check
+        fetch('/sync/status')
+        .then(r => r.json())
+        .then(data => {
+            if (!data.authenticated) return;
+            updateSyncStatus('Synced ' + formatTimeAgo(data.last_sync), false);
+            // Start polling
+            syncTimer = setInterval(runAutoSync, SYNC_INTERVAL);
+        })
+        .catch(() => {});
+    }
+
+    document.addEventListener('DOMContentLoaded', startAutoSync);
+})();
